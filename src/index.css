@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* Clean white and gray palette */
+    --background: 0 0% 100%;
+    --foreground: 220 20% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
+
+    /* Deep slate blue for primary actions */
+    --primary: 220 60% 20%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Soft gray for secondary elements */
+    --secondary: 220 10% 96%;
+    --secondary-foreground: 220 20% 10%;
+
+    --muted: 220 10% 96%;
+    --muted-foreground: 220 10% 45%;
+
+    --accent: 220 10% 94%;
+    --accent-foreground: 220 20% 10%;
+
+    /* Status colors */
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 220 60% 20%;
+
+    --radius: 0.75rem;
+
+    /* Sidebar */
+    --sidebar-background: 220 10% 98%;
+    --sidebar-foreground: 220 10% 30%;
+    --sidebar-primary: 220 60% 20%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 10% 94%;
+    --sidebar-accent-foreground: 220 20% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 220 60% 50%;
+
+    /* Custom shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(220 20% 10% / 0.03);
+    --shadow-md: 0 4px 6px -1px hsl(220 20% 10% / 0.05), 0 2px 4px -2px hsl(220 20% 10% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(220 20% 10% / 0.08), 0 4px 6px -4px hsl(220 20% 10% / 0.05);
+    --shadow-xl: 0 20px 25px -5px hsl(220 20% 10% / 0.08), 0 8px 10px -6px hsl(220 20% 10% / 0.05);
+  }
+
+  .dark {
+    --background: 220 20% 8%;
+    --foreground: 0 0% 98%;
+
+    --card: 220 20% 10%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 220 20% 10%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 220 60% 60%;
+    --primary-foreground: 220 20% 8%;
+
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 220 15% 18%;
+    --muted-foreground: 220 10% 60%;
+
+    --accent: 220 15% 18%;
+    --accent-foreground: 0 0% 98%;
+
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    --ring: 220 60% 60%;
+
+    --sidebar-background: 220 20% 8%;
+    --sidebar-foreground: 220 10% 75%;
+    --sidebar-primary: 220 60% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 15%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 15% 20%;
+    --sidebar-ring: 220 60% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Premium card styles */
+  .card-elevated {
+    @apply bg-card rounded-xl border border-border/50;
+    box-shadow: var(--shadow-md);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .card-elevated:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+
+  /* Status badge styles */
+  .badge-success {
+    @apply bg-success text-success-foreground px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-warning {
+    @apply bg-warning text-warning-foreground px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-destructive {
+    @apply bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  /* Stat card gradient backgrounds */
+  .stat-card {
+    @apply relative overflow-hidden rounded-xl p-6;
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(220 10% 98%) 100%);
+    box-shadow: var(--shadow-md);
+  }
+
+  .stat-card::before {
+    content: '';
+    @apply absolute top-0 right-0 w-24 h-24 rounded-full opacity-10;
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, transparent 100%);
+    transform: translate(30%, -30%);
+  }
+
+  /* Hero overlay */
+  .hero-overlay {
+    background: linear-gradient(135deg, hsl(220 20% 10% / 0.85) 0%, hsl(220 20% 15% / 0.75) 100%);
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  /* Action button styles */
+  .action-btn {
+    @apply p-2 rounded-lg transition-smooth hover:bg-accent;
+  }
+
+  /* Section divider */
+  .section-muted {
+    @apply bg-muted/50 rounded-2xl p-6;
+  }
+}
+
+@layer utilities {
+  .shadow-card {
+    box-shadow: var(--shadow-md);
+  }
+
+  .shadow-card-hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
