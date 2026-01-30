@@ -11,21 +11,35 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Update Supabase Database
+      - name: Debug - Check secrets
         run: |
-          curl -X PATCH "${{ secrets.SUPABASE_URL }}/rest/v1/keep_alive?id=eq.1" \
+          echo "SUPABASE_URL length: ${#SUPABASE_URL}"
+          echo "SUPABASE_SERVICE_ROLE_KEY length: ${#SUPABASE_SERVICE_ROLE_KEY}"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Update Supabase Database
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          curl -X PATCH "${SUPABASE_URL}/rest/v1/keep_alive?id=eq.1" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "Prefer: return=minimal" \
             -d '{"last_ping": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' \
             -w "\nHTTP Status: %{http_code}\n"
 
       - name: If update fails, insert new record
         if: failure()
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          curl -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/keep_alive" \
+          curl -X POST "${SUPABASE_URL}/rest/v1/keep_alive" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
             -d '{"id": 1, "last_ping": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}'
 
       - name: Log success
