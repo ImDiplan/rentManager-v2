@@ -138,8 +138,10 @@ const PropertyViewModal = ({ open, onClose, property }: PropertyViewModalProps) 
     }
   };
 
-  const getDocumentByType = (type: string) => {
-    return property.documents?.find((doc) => doc.type === type);
+  const getDocumentByType = (type: string, owner: 'tenant' | 'guarantor' = 'tenant') => {
+    return property.documents?.find(
+      (doc) => doc.type === type && (doc.document_owner || 'tenant') === owner
+    );
   };
 
   return (
@@ -261,6 +263,37 @@ const PropertyViewModal = ({ open, onClose, property }: PropertyViewModalProps) 
             </div>
           )}
 
+          {/* Guarantor Information */}
+          {isOccupied && property.guarantor && (
+            <div className="section-muted space-y-4">
+              <h3 className="font-medium text-foreground flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Información del Garante
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <User className="w-4 h-4 flex-shrink-0" />
+                  <span>{property.guarantor.name}</span>
+                </div>
+
+                {property.guarantor.phone && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="w-4 h-4 flex-shrink-0" />
+                    <span>{property.guarantor.phone}</span>
+                  </div>
+                )}
+
+                {property.guarantor.email && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="w-4 h-4 flex-shrink-0" />
+                    <span>{property.guarantor.email}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Payment Status */}
           {isOccupied && (
             <div className="section-muted space-y-4">
@@ -317,12 +350,12 @@ const PropertyViewModal = ({ open, onClose, property }: PropertyViewModalProps) 
           <div className="section-muted space-y-4">
             <h3 className="font-medium text-foreground flex items-center gap-2">
               <FileText className="w-4 h-4" />
-              Documentos
+              Documentos del Inquilino
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {DOCUMENT_TYPES.map((docType) => {
-                const doc = getDocumentByType(docType.value);
+                const doc = getDocumentByType(docType.value, 'tenant');
                 return (
                   <div
                     key={docType.value}
@@ -362,6 +395,58 @@ const PropertyViewModal = ({ open, onClose, property }: PropertyViewModalProps) 
               })}
             </div>
           </div>
+
+          {/* Guarantor Documents */}
+          {isOccupied && property.guarantor && (
+            <div className="section-muted space-y-4">
+              <h3 className="font-medium text-foreground flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Documentos del Garante
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {DOCUMENT_TYPES.map((docType) => {
+                  const doc = getDocumentByType(docType.value, 'guarantor');
+                  return (
+                    <div
+                      key={docType.value}
+                      className={cn(
+                        "flex items-center justify-between px-3 py-2 rounded-lg border text-sm",
+                        doc
+                          ? "border-success/30 bg-success/5"
+                          : "border-border bg-muted/30"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          doc ? "text-foreground" : "text-muted-foreground"
+                        )}
+                      >
+                        {docType.label}
+                      </span>
+                      {doc ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedDocument(doc);
+                            setDocumentModalOpen(true);
+                          }}
+                          className="text-primary hover:underline h-auto p-0"
+                        >
+                          Ver
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">
+                          No adjunto
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </DialogContent>
       </Dialog>

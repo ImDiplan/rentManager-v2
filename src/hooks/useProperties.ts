@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Property, Tenant, Document, PropertyWithTenant } from "@/types/property";
+import { Property, Tenant, Guarantor, Document, PropertyWithTenant } from "@/types/property";
 import { toast } from "sonner";
 
-// Fetch all properties with tenants
+// Fetch all properties with tenants and guarantors
 export const useProperties = () => {
   return useQuery({
     queryKey: ["properties"],
@@ -23,6 +23,13 @@ export const useProperties = () => {
 
       if (tenantsError) throw tenantsError;
 
+      // Fetch guarantors
+      const { data: guarantors, error: guarantorsError } = await supabase
+        .from("guarantors")
+        .select("*");
+
+      if (guarantorsError) throw guarantorsError;
+
       // Fetch documents
       const { data: documents, error: documentsError } = await supabase
         .from("documents")
@@ -34,6 +41,7 @@ export const useProperties = () => {
       return (properties as Property[]).map((property) => ({
         ...property,
         tenant: (tenants as Tenant[]).find((t) => t.property_id === property.id) || null,
+        guarantor: (guarantors as Guarantor[]).find((g) => g.property_id === property.id) || null,
         documents: (documents as Document[]).filter((d) => d.property_id === property.id),
       }));
     },
@@ -48,9 +56,11 @@ export const useCreateProperty = () => {
     mutationFn: async ({
       property,
       tenant,
+      guarantor,
     }: {
       property: Omit<Property, "id" | "created_at" | "updated_at">;
       tenant?: Omit<Tenant, "id" | "property_id" | "created_at" | "updated_at"> | null;
+      guarantor?: Omit<Guarantor, "id" | "property_id" | "created_at" | "updated_at"> | null;
     }) => {
       // Insert property
       const { data: newProperty, error: propertyError } = await supabase
@@ -69,6 +79,16 @@ export const useCreateProperty = () => {
         });
 
         if (tenantError) throw tenantError;
+      }
+
+      // Insert guarantor if provided
+      if (guarantor && guarantor.name) {
+        const { error: guarantorError } = await supabase.from("guarantors").insert({
+          ...guarantor,
+          property_id: newProperty.id,
+        });
+
+        if (guarantorError) throw guarantorError;
       }
 
       return newProperty;
@@ -92,10 +112,12 @@ export const useUpdateProperty = () => {
       id,
       property,
       tenant,
+      guarantor,
     }: {
       id: string;
       property: Partial<Property>;
       tenant?: Partial<Tenant> | null;
+      guarantor?: Partial<Guarantor> | null;
     }) => {
       // Update property
       const { error: propertyError } = await supabase
@@ -123,18 +145,42 @@ export const useUpdateProperty = () => {
 
           if (tenantError) throw tenantError;
         } else {
-          // Create new tenant
+          // Insert new tenant
           const { error: tenantError } = await supabase.from("tenants").insert({
             ...tenant,
             property_id: id,
-            name: tenant.name || "",
           });
 
           if (tenantError) throw tenantError;
         }
-      } else if (property.status === "Disponible") {
-        // Delete tenant if status changed to available
-        await supabase.from("tenants").delete().eq("property_id", id);
+      }
+
+      // Handle guarantor
+      if (guarantor && guarantor.name) {
+        // Check if guarantor exists
+        const { data: existingGuarantor } = await supabase
+          .from("guarantors")
+          .select("id")
+          .eq("property_id", id)
+          .maybeSingle();
+
+        if (existingGuarantor) {
+          // Update guarantor
+          const { error: guarantorError } = await supabase
+            .from("guarantors")
+            .update(guarantor)
+            .eq("property_id", id);
+
+          if (guarantorError) throw guarantorError;
+        } else {
+          // Insert new guarantor
+          const { error: guarantorError } = await supabase.from("guarantors").insert({
+            ...guarantor,
+            property_id: id,
+          });
+
+          if (guarantorError) throw guarantorError;
+        }
       }
 
       return id;
@@ -216,12 +262,14 @@ export const useUploadDocument = () => {
       propertyId,
       file,
       type,
+      documentOwner = "tenant",
     }: {
       propertyId: string;
       file: File;
       type: Document["type"];
+      documentOwner?: "tenant" | "guarantor";
     }) => {
-      const fileName = `${propertyId}/${type}_${Date.now()}_${file.name}`;
+      const fileName = `${propertyId}/${documentOwner}/${type}_${Date.now()}_${file.name}`;
 
       // Upload file to storage
       const { error: uploadError } = await supabase.storage
@@ -241,6 +289,7 @@ export const useUploadDocument = () => {
         type,
         file_url: urlData.publicUrl,
         file_name: file.name,
+        document_owner: documentOwner,
       });
 
       if (docError) throw docError;

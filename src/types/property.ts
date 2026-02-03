@@ -24,17 +24,29 @@ export interface Tenant {
   updated_at: string;
 }
 
+export interface Guarantor {
+  id: string;
+  property_id: string | null;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Document {
   id: string;
   property_id: string | null;
   type: 'CEDULA' | 'CARTA_TRABAJO' | 'DATA_CREDITO' | 'MOVIMIENTOS_BANCARIOS' | 'CONTRATO' | 'OTROS';
   file_url: string;
   file_name: string | null;
+  document_owner: 'tenant' | 'guarantor';
   created_at: string;
 }
 
 export interface PropertyWithTenant extends Property {
   tenant?: Tenant | null;
+  guarantor?: Guarantor | null;
   documents?: Document[];
 }
 

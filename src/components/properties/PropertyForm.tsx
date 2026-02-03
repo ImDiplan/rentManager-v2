@@ -16,9 +16,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useCreateProperty, useUpdateProperty, useUploadDocument } from "@/hooks/useProperties";
-import { Upload, X, Loader2 } from "lucide-react";
-import { addMonths, format, setDate as setDateFn } from "date-fns";
+import { Upload, X, Loader2, Calendar } from "lucide-react";
+import { addMonths, format, setDate as setDateFn, getDaysInMonth } from "date-fns";
 
 interface PropertyFormProps {
   open: boolean;
@@ -65,7 +70,15 @@ const PropertyForm = ({ open, onClose, property }: PropertyFormProps) => {
     contract_end: "",
   });
 
+  const [guarantorData, setGuarantorData] = useState({
+    name: "",
+    phone: "",
+    email: "",
+  });
+
   const [documents, setDocuments] = useState<Record<string, File | null>>({});
+  const [guarantorDocuments, setGuarantorDocuments] = useState<Record<string, File | null>>({});
+  const [paymentDayOpen, setPaymentDayOpen] = useState(false);
 
   useEffect(() => {
     if (property) {
@@ -87,6 +100,14 @@ const PropertyForm = ({ open, onClose, property }: PropertyFormProps) => {
           contract_end: property.tenant.contract_end || "",
         });
       }
+
+      if (property.guarantor) {
+        setGuarantorData({
+          name: property.guarantor.name,
+          phone: property.guarantor.phone || "",
+          email: property.guarantor.email || "",
+        });
+      }
     } else {
       // Reset form for new property
       setFormData({
@@ -104,7 +125,13 @@ const PropertyForm = ({ open, onClose, property }: PropertyFormProps) => {
         contract_start: "",
         contract_end: "",
       });
+      setGuarantorData({
+        name: "",
+        phone: "",
+        email: "",
+      });
       setDocuments({});
+      setGuarantorDocuments({});
     }
   }, [property, open]);
 
@@ -141,6 +168,15 @@ const PropertyForm = ({ open, onClose, property }: PropertyFormProps) => {
           }
         : null;
 
+    const guarantorPayload =
+      formData.status === "Ocupado" && guarantorData.name
+        ? {
+            name: guarantorData.name,
+            phone: guarantorData.phone || null,
+            email: guarantorData.email || null,
+          }
+        : null;
+
     try {
       let propertyId = property?.id;
 
@@ -149,22 +185,37 @@ const PropertyForm = ({ open, onClose, property }: PropertyFormProps) => {
           id: propertyId,
           property: propertyPayload,
           tenant: tenantPayload,
+          guarantor: guarantorPayload,
         });
       } else {
         const newProperty = await createProperty.mutateAsync({
           property: propertyPayload,
           tenant: tenantPayload,
+          guarantor: guarantorPayload,
         });
         propertyId = newProperty.id;
       }
 
-      // Upload documents
+      // Upload tenant documents
       for (const [type, file] of Object.entries(documents)) {
         if (file && propertyId) {
           await uploadDocument.mutateAsync({
             propertyId,
             file,
             type: type as any,
+            documentOwner: "tenant",
+          });
+        }
+      }
+
+      // Upload guarantor documents
+      for (const [type, file] of Object.entries(guarantorDocuments)) {
+        if (file && propertyId) {
+          await uploadDocument.mutateAsync({
+            propertyId,
+            file,
+            type: type as any,
+            documentOwner: "guarantor",
           });
         }
       }
@@ -273,20 +324,54 @@ const PropertyForm = ({ open, onClose, property }: PropertyFormProps) => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="payment_day">Día de Pago (1-31)</Label>
-                <Input
-                  id="payment_day"
-                  type="number"
-                  min="1"
-                  max="31"
-                  value={formData.payment_day}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      payment_day: Math.min(31, Math.max(1, parseInt(e.target.value) || 1)),
-                    })
-                  }
-                />
+                <Label>Día de Pago</Label>
+                <Popover open={paymentDayOpen} onOpenChange={setPaymentDayOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Día {formData.payment_day}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-4" align="start">
+                    <div className="space-y-3">
+                      <div className="text-sm font-medium">Selecciona el día de pago</div>
+                      <div className="grid grid-cols-7 gap-2">
+                        {Array.from({ length: getDaysInMonth(new Date()) }).map((_, i) => {
+                          const day = i + 1;
+                          const isSelected = formData.payment_day === day;
+                          return (
+                            <button
+                              key={day}
+                              type="button"
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  payment_day: day,
+                                });
+                                setPaymentDayOpen(false);
+                              }}
+                              className={`
+                                w-full aspect-square rounded-lg text-sm font-medium transition-colors
+                                ${isSelected
+                                  ? "bg-primary text-primary-foreground"
+                                  : "border border-border hover:bg-accent hover:border-primary/50"
+                                }
+                              `}
+                            >
+                              {day}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="text-xs text-muted-foreground text-center pt-2">
+                        Día seleccionado: <span className="font-medium text-foreground">{formData.payment_day}</span>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>
@@ -372,54 +457,192 @@ const PropertyForm = ({ open, onClose, property }: PropertyFormProps) => {
             </div>
           )}
 
-          {/* Documents Section */}
-          <div className="section-muted space-y-4">
-            <h3 className="font-medium text-foreground">Documentos (Opcional)</h3>
+          {/* Guarantor Information - Only show if occupied */}
+          {formData.status === "Ocupado" && (
+            <div className="section-muted space-y-4">
+              <h3 className="font-medium text-foreground">
+                Información del Garante (Opcional)
+              </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {DOCUMENT_TYPES.map((docType) => (
-                <div key={docType.value} className="space-y-2">
-                  <Label>{docType.label}</Label>
-                  <div className="flex items-center gap-2">
-                    <label className="flex-1 cursor-pointer">
-                      <div className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-accent transition-smooth">
-                        <Upload className="w-4 h-4" />
-                        <span className="truncate">
-                          {documents[docType.value]?.name || "Sin archivo"}
-                        </span>
-                      </div>
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          setDocuments({
-                            ...documents,
-                            [docType.value]: file || null,
-                          });
-                        }}
-                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                      />
-                    </label>
-                    {documents[docType.value] && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setDocuments({
-                            ...documents,
-                            [docType.value]: null,
-                          })
-                        }
-                        className="p-2 text-muted-foreground hover:text-destructive transition-smooth"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="guarantor_name">Nombre del Garante</Label>
+                  <Input
+                    id="guarantor_name"
+                    value={guarantorData.name}
+                    onChange={(e) =>
+                      setGuarantorData({ ...guarantorData, name: e.target.value })
+                    }
+                    placeholder="Nombre completo"
+                  />
                 </div>
-              ))}
+
+                <div className="space-y-2">
+                  <Label htmlFor="guarantor_phone">Teléfono</Label>
+                  <Input
+                    id="guarantor_phone"
+                    value={guarantorData.phone}
+                    onChange={(e) => {
+                      const formatted = formatPhoneNumber(e.target.value);
+                      setGuarantorData({ ...guarantorData, phone: formatted });
+                    }}
+                    placeholder="809-555-0000"
+                    maxLength="12"
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="guarantor_email">Correo Electrónico</Label>
+                  <Input
+                    id="guarantor_email"
+                    type="email"
+                    value={guarantorData.email}
+                    onChange={(e) =>
+                      setGuarantorData({ ...guarantorData, email: e.target.value })
+                    }
+                    placeholder="correo@ejemplo.com"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Tenant Documents Section */}
+          {formData.status === "Ocupado" && (
+            <div className="section-muted space-y-4">
+              <h3 className="font-medium text-foreground">Documentos del Inquilino (Opcional)</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {DOCUMENT_TYPES.map((docType) => {
+                  // Check if there's an existing tenant document
+                  const existingDoc = property?.documents?.find(
+                    (doc) => doc.type === docType.value && (doc.document_owner === 'tenant' || !doc.document_owner)
+                  );
+                  
+                  return (
+                    <div key={docType.value} className="space-y-2">
+                      <Label>{docType.label}</Label>
+                      
+                      {/* Show existing document if present */}
+                      {existingDoc && !documents[docType.value] && (
+                        <div className="px-3 py-2 border border-success/30 bg-success/5 rounded-lg text-sm text-muted-foreground flex items-center justify-between">
+                          <span className="truncate">{existingDoc.original_name || 'Documento cargado'}</span>
+                          <span className="text-xs text-success font-medium whitespace-nowrap ml-2">✓ Cargado</span>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-2">
+                        <label className="flex-1 cursor-pointer">
+                          <div className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-accent transition-smooth">
+                            <Upload className="w-4 h-4" />
+                            <span className="truncate">
+                              {documents[docType.value]?.name || "Sin archivo"}
+                            </span>
+                          </div>
+                          <input
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              setDocuments({
+                                ...documents,
+                                [docType.value]: file || null,
+                              });
+                            }}
+                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                          />
+                        </label>
+                        {documents[docType.value] && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDocuments({
+                                ...documents,
+                                [docType.value]: null,
+                              })
+                            }
+                            className="p-2 text-muted-foreground hover:text-destructive transition-smooth"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Guarantor Documents Section */}
+          {formData.status === "Ocupado" && guarantorData.name && (
+            <div className="section-muted space-y-4">
+              <h3 className="font-medium text-foreground">Documentos del Garante (Opcional)</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {DOCUMENT_TYPES.map((docType) => {
+                  // Check if there's an existing guarantor document
+                  const existingDoc = property?.documents?.find(
+                    (doc) => doc.type === docType.value && doc.document_owner === 'guarantor'
+                  );
+                  
+                  return (
+                    <div key={`guarantor-${docType.value}`} className="space-y-2">
+                      <Label>{docType.label}</Label>
+                      
+                      {/* Show existing document if present */}
+                      {existingDoc && !guarantorDocuments[docType.value] && (
+                        <div className="px-3 py-2 border border-success/30 bg-success/5 rounded-lg text-sm text-muted-foreground flex items-center justify-between">
+                          <span className="truncate">{existingDoc.original_name || 'Documento cargado'}</span>
+                          <span className="text-xs text-success font-medium whitespace-nowrap ml-2">✓ Cargado</span>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-2">
+                        <label className="flex-1 cursor-pointer">
+                          <div className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg text-sm text-muted-foreground hover:bg-accent transition-smooth">
+                            <Upload className="w-4 h-4" />
+                            <span className="truncate">
+                              {guarantorDocuments[docType.value]?.name || "Sin archivo"}
+                            </span>
+                          </div>
+                          <input
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              setGuarantorDocuments({
+                                ...guarantorDocuments,
+                                [docType.value]: file || null,
+                              });
+                            }}
+                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                          />
+                        </label>
+                        {guarantorDocuments[docType.value] && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setGuarantorDocuments({
+                                ...guarantorDocuments,
+                                [docType.value]: null,
+                              })
+                            }
+                            className="p-2 text-muted-foreground hover:text-destructive transition-smooth"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Documents Section - Deprecated, keeping for backward compatibility */}
+          {/* This section is now split into Tenant and Guarantor documents above */}
 
           {/* Submit Button */}
           <div className="flex justify-end gap-3">
