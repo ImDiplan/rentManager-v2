@@ -58,6 +58,7 @@ const PropertyForm = ({ open, onClose, property }: PropertyFormProps) => {
     address: "",
     rooms: 1,
     monthly_rent: 0,
+    currency: "RD$" as "RD$" | "USD",
     status: "Disponible" as "Disponible" | "Ocupado",
     payment_day: 1,
   });
@@ -87,6 +88,7 @@ const PropertyForm = ({ open, onClose, property }: PropertyFormProps) => {
         address: property.address,
         rooms: property.rooms,
         monthly_rent: property.monthly_rent,
+        currency: property.currency || "RD$",
         status: property.status,
         payment_day: property.payment_day || 1,
       });
@@ -115,6 +117,7 @@ const PropertyForm = ({ open, onClose, property }: PropertyFormProps) => {
         address: "",
         rooms: 1,
         monthly_rent: 0,
+        currency: "RD$",
         status: "Disponible",
         payment_day: 1,
       });
@@ -288,21 +291,39 @@ const PropertyForm = ({ open, onClose, property }: PropertyFormProps) => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="monthly_rent">Alquiler Mensual (RD$) <span className="text-destructive">*</span></Label>
-                <Input
-                  id="monthly_rent"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.monthly_rent}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      monthly_rent: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                  required
-                />
+                <Label htmlFor="monthly_rent">Alquiler Mensual <span className="text-destructive">*</span></Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Input
+                    id="monthly_rent"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.monthly_rent}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        monthly_rent: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    placeholder="Monto"
+                    className="col-span-2"
+                    required
+                  />
+                  <Select
+                    value={formData.currency}
+                    onValueChange={(value: "RD$" | "USD") =>
+                      setFormData({ ...formData, currency: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="RD$">RD$</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="space-y-2">

@@ -14,6 +14,7 @@ import { format, parseISO, addMonths, isBefore, isAfter, addDays } from "date-fn
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { convertCurrency } from "@/lib/currency";
 
 const Dashboard = () => {
   const { data: properties, isLoading } = useProperties();
@@ -25,7 +26,8 @@ const Dashboard = () => {
       return {
         totalProperties: 0,
         totalTenants: 0,
-        monthlyIncome: 0,
+        monthlyIncomeRDX: 0,
+        monthlyIncomeUSD: 0,
         expiringContracts: 0,
       };
     }
@@ -34,10 +36,23 @@ const Dashboard = () => {
     const threeMonthsFromNow = addMonths(today, 3);
 
     const occupiedProperties = properties.filter((p) => p.status === "Ocupado");
-    const totalRent = occupiedProperties.reduce(
-      (sum, p) => sum + p.monthly_rent,
-      0
-    );
+    
+    // Calculate revenue in both currencies
+    let totalRentRD = 0;
+    let totalRentUSD = 0;
+    
+    occupiedProperties.forEach((p) => {
+      if (p.currency === "RD$") {
+        totalRentRD += p.monthly_rent;
+      } else {
+        totalRentUSD += p.monthly_rent;
+      }
+    });
+
+    // Convert all to RD$ for total
+    const totalRentInRD = totalRentRD + convertCurrency(totalRentUSD, 'USD', 'RD$');
+    const monthlyIncomeRD = totalRentInRD * 0.1; // 10% commission in RD$
+    const monthlyIncomeUSD = monthlyIncomeRD / 56; // Convert back to USD
 
     const expiringContracts = properties.filter(
       (p) =>
@@ -49,7 +64,8 @@ const Dashboard = () => {
     return {
       totalProperties: properties.length,
       totalTenants: occupiedProperties.length,
-      monthlyIncome: totalRent * 0.1, // 10% commission
+      monthlyIncomeRDX: monthlyIncomeRD,
+      monthlyIncomeUSD: monthlyIncomeUSD,
       expiringContracts: expiringContracts.length,
     };
   }, [properties]);
@@ -131,7 +147,12 @@ const Dashboard = () => {
     },
     {
       label: "Ingreso Mensual (10%)",
-      value: `RD$ ${stats.monthlyIncome.toLocaleString("es-DO")}`,
+      value: (
+        <div className="text-2xl font-bold text-foreground space-y-1">
+          <div>RD$ {stats.monthlyIncomeRDX.toLocaleString("es-DO")}</div>
+          <div className="text-sm text-muted-foreground">USD ${stats.monthlyIncomeUSD.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        </div>
+      ),
       icon: DollarSign,
       color: "text-warning",
     },
@@ -165,13 +186,21 @@ const Dashboard = () => {
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className="flex items-start justify-between">
-                <div>
+                <div className="flex-1">
                   <p className="text-sm text-muted-foreground mb-1">
                     {stat.label}
                   </p>
-                  <p className="text-2xl font-bold text-foreground">
-                    {stat.value}
-                  </p>
+                  {typeof stat.value === 'string' ? (
+                    <p className="text-2xl font-bold text-foreground">
+                      {stat.value}
+                    </p>
+                  ) : typeof stat.value === 'number' ? (
+                    <p className="text-2xl font-bold text-foreground">
+                      {stat.value}
+                    </p>
+                  ) : (
+                    stat.value
+                  )}
                 </div>
                 <div className={cn("p-2 rounded-lg bg-muted", stat.color)}>
                   <stat.icon className="w-5 h-5" />
@@ -252,8 +281,8 @@ const Dashboard = () => {
                         {property.name}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {property.tenant?.name} • RD${" "}
-                        {property.monthly_rent.toLocaleString("es-DO")}
+                        {property.tenant?.name} • {property.currency} {" "}
+                        {property.monthly_rent.toLocaleString(property.currency === 'USD' ? 'en-US' : 'es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
                     <div className="text-right">

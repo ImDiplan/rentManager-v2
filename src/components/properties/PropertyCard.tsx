@@ -149,7 +149,7 @@ const PropertyCard = ({ property, onView, onEdit }: PropertyCardProps) => {
         <div className="flex items-center gap-2 text-muted-foreground">
           <DollarSign className="w-4 h-4 flex-shrink-0" />
           <span className="font-medium text-foreground">
-            RD$ {property.monthly_rent.toLocaleString("es-DO")}
+            {property.currency} {property.monthly_rent.toLocaleString(property.currency === 'USD' ? 'en-US' : 'es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
           <span>/mes</span>
         </div>

@@ -196,7 +196,7 @@ const PropertyViewModal = ({ open, onClose, property }: PropertyViewModalProps) 
               <div className="flex items-center gap-2">
                 <DollarSign className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
                 <span className="font-semibold text-foreground">
-                  RD$ {property.monthly_rent.toLocaleString("es-DO")}
+                  {property.currency} {property.monthly_rent.toLocaleString(property.currency === 'USD' ? 'en-US' : 'es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 <span className="text-muted-foreground">/mes</span>
               </div>

@@ -4,6 +4,7 @@ export interface Property {
   address: string;
   rooms: number;
   monthly_rent: number;
+  currency: 'RD$' | 'USD';
   status: 'Disponible' | 'Ocupado';
   payment_day: number | null;
   next_payment_date: string | null;
