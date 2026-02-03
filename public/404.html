@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Hogar Gestionado</title>
+    <script type="text/javascript">
+      // Single Page Apps for GitHub Pages
+      // MIT License
+      // https://github.com/rafgraph/spa-github-pages
+      // This script takes the current URL and converts it back
+      // into whatever it was before it was served, e.g.
+      // https://example.com/one/two?a=b&c=d#qwe becomes
+      // https://example.com/?/one/two&a=b~and~c=d#qwe
+      // Note: this 404.html file must be at least 512 bytes for it to work
+      // with Internet Explorer (it is currently > 512 bytes)
+
+      (function () {
+        // sessionStorage should be available even in 'private' browsing mode
+        // https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
+        var sessionStorage;
+        try {
+          sessionStorage = window.sessionStorage;
+        } catch (e) {
+          sessionStorage = {};
+        }
+
+        // Get the current URL and the 'redirect' query parameter
+        // 1. remove the preceding slash, if present
+        var redirect = decodeURIComponent(window.location.pathname);
+        if (redirect.charAt(0) === "/") {
+          redirect = redirect.slice(1);
+        }
+
+        // Put the redirect in sessionStorage
+        sessionStorage["redirect"] = redirect;
+        sessionStorage["redirect_url"] = window.location.href;
+
+        // If we're not in the root directory, we need to go there
+        if (window.location.pathname !== "/") {
+          // Check if this is a GitHub Pages URL
+          if (window.location.hostname.includes("github.io")) {
+            // Redirect to the root of the repository
+            var parts = window.location.pathname.split("/");
+            var repoPath = "/" + parts[1] + "/"; // /repo-name/
+            window.location.href = repoPath;
+          } else {
+            // For custom domains, go to root
+            window.location.href = "/";
+          }
+        }
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>
