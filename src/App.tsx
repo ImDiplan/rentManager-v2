@@ -10,12 +10,28 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Get basename from environment or window location
+const getBasename = () => {
+  const isDev = import.meta.env.DEV;
+  if (isDev) return "/";
+  
+  // For GitHub Pages with repo name in URL
+  const pathname = window.location.pathname;
+  const segments = pathname.split("/").filter(s => s);
+  
+  // If the first segment is not just a domain/IP, treat it as repo name
+  if (segments.length > 0 && !segments[0].includes(".") && segments[0] !== "hogar-gestionado-main") {
+    return "/" + segments[0] + "/";
+  }
+  return "/";
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename={getBasename()}>
         <Routes>
           <Route path="/" element={<Welcome />} />
           <Route path="/dashboard" element={<Dashboard />} />
