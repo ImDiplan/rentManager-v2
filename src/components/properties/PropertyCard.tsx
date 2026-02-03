@@ -1,6 +1,6 @@
 import { PropertyWithTenant } from "@/types/property";
 import { Eye, Pencil, Trash2, MapPin, DollarSign, User, Calendar, CreditCard } from "lucide-react";
-import { format, parseISO, isAfter, isBefore, addDays } from "date-fns";
+import { format, parseISO, isAfter, isBefore, addDays, differenceInMonths, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useDeleteProperty } from "@/hooks/useProperties";
@@ -22,7 +22,7 @@ const getPaymentStatusBadge = (status: string | null, nextPaymentDate: string | 
     return { label: "Pagado", className: "badge-success" };
   }
   
-  // For Pendiente or null, check if it should be Atrasado based on date
+  // For Pendiente or null, calculate days remaining
   if (nextPaymentDate) {
     const today = new Date();
     const paymentDate = parseISO(nextPaymentDate);
@@ -31,16 +31,25 @@ const getPaymentStatusBadge = (status: string | null, nextPaymentDate: string | 
       return { label: "Atrasado", className: "badge-destructive" };
     }
     
-    if (isBefore(paymentDate, addDays(today, 7))) {
-      return { label: "Pendiente", className: "badge-warning" };
+    const daysUntilPayment = Math.ceil(
+      (paymentDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    
+    if (daysUntilPayment > 0) {
+      const dayLabel = daysUntilPayment === 1 ? "día" : "días";
+      const isUrgent = daysUntilPayment <= 5;
+      return { 
+        label: isUrgent ? `⏰ Vence en ${daysUntilPayment} ${dayLabel}` : `Vence en ${daysUntilPayment} ${dayLabel}`, 
+        className: isUrgent ? "badge-urgent-payment" : "badge-warning" 
+      };
     }
   }
   
-  return { label: status || "Pendiente", className: "badge-warning" };
+  return { label: "Pendiente", className: "badge-warning" };
 };
 
-const isPaymentUrgent = (nextPaymentDate: string | null) => {
-  if (!nextPaymentDate) return false;
+const getDaysUntilPayment = (nextPaymentDate: string | null) => {
+  if (!nextPaymentDate) return null;
   
   const today = new Date();
   const paymentDate = parseISO(nextPaymentDate);
@@ -48,7 +57,23 @@ const isPaymentUrgent = (nextPaymentDate: string | null) => {
     (paymentDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
   );
   
-  return daysUntilPayment > 0 && daysUntilPayment <= 5;
+  return daysUntilPayment > 0 ? daysUntilPayment : null;
+};
+
+const getContractExpirationInfo = (contractEnd: string | null) => {
+  if (!contractEnd) return null;
+  
+  const today = new Date();
+  const endDate = parseISO(contractEnd);
+  const monthsUntilEnd = differenceInMonths(endDate, today);
+  
+  // Show if 3 months or less remaining
+  if (monthsUntilEnd >= 0 && monthsUntilEnd <= 3) {
+    const monthLabel = monthsUntilEnd === 1 ? "mes" : "meses";
+    return { label: `📋 Contrato vence en ${monthsUntilEnd} ${monthLabel}`, type: "months" };
+  }
+  
+  return null;
 };
 
 const PropertyCard = ({ property, onView, onEdit }: PropertyCardProps) => {
@@ -57,6 +82,8 @@ const PropertyCard = ({ property, onView, onEdit }: PropertyCardProps) => {
     ? getPaymentStatusBadge(property.payment_status, property.next_payment_date)
     : null;
   const deleteProperty = useDeleteProperty();
+  
+  const contractExpirationInfo = getContractExpirationInfo(property.tenant?.contract_end || null);
 
   const handleDelete = async () => {
     if (window.confirm(`¿Está seguro de que desea eliminar la propiedad "${property.name}"?`)) {
@@ -129,9 +156,16 @@ const PropertyCard = ({ property, onView, onEdit }: PropertyCardProps) => {
 
         {isOccupied && property.tenant && (
           <>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <User className="w-4 h-4 flex-shrink-0" />
-              <span className="line-clamp-1">{property.tenant.name}</span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-muted-foreground flex-1">
+                <User className="w-4 h-4 flex-shrink-0" />
+                <span className="line-clamp-1">{property.tenant.name}</span>
+              </div>
+              {contractExpirationInfo !== null && (
+                <div className="badge-contract-expiring">
+                  {contractExpirationInfo.label}
+                </div>
+              )}
             </div>
 
             {property.next_payment_date && (
@@ -149,14 +183,7 @@ const PropertyCard = ({ property, onView, onEdit }: PropertyCardProps) => {
             {paymentBadge && (
               <div className="flex items-center gap-3">
                 <CreditCard className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
-                <div className="flex items-center gap-2">
-                  <span className={paymentBadge.className}>{paymentBadge.label}</span>
-                  {isPaymentUrgent(property.next_payment_date) && (
-                    <div className="badge-urgent-floating">
-                      ⏰ Vence pronto
-                    </div>
-                  )}
-                </div>
+                <span className={paymentBadge.className}>{paymentBadge.label}</span>
               </div>
             )}
           </>

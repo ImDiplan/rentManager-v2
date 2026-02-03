@@ -59,13 +59,53 @@ const PropertyViewModal = ({ open, onClose, property }: PropertyViewModalProps) 
     switch (status) {
       case "Pagado":
         return "badge-success";
-      case "Pendiente":
-        return "badge-warning";
       case "Atrasado":
         return "badge-destructive";
       default:
         return "badge-warning";
     }
+  };
+
+  const getPaymentStatusLabel = (status: string | null) => {
+    if (status === "Atrasado" || status === "Pagado") {
+      return status;
+    }
+    
+    if (property.next_payment_date) {
+      const today = new Date();
+      const paymentDate = parseISO(property.next_payment_date);
+      const daysUntilPayment = Math.ceil(
+        (paymentDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      
+      if (daysUntilPayment > 0) {
+        const dayLabel = daysUntilPayment === 1 ? "día" : "días";
+        const isUrgent = daysUntilPayment <= 5;
+        return isUrgent ? `⏰ Vence en ${daysUntilPayment} ${dayLabel}` : `Vence en ${daysUntilPayment} ${dayLabel}`;
+      }
+    }
+    
+    return "Pendiente";
+  };
+
+  const getPaymentStatusBadgeClass = (status: string | null) => {
+    if (status === "Pagado") return "badge-success";
+    if (status === "Atrasado") return "badge-destructive";
+    
+    // For pending status, check if urgent (5 days or less)
+    if (property.next_payment_date) {
+      const today = new Date();
+      const paymentDate = parseISO(property.next_payment_date);
+      const daysUntilPayment = Math.ceil(
+        (paymentDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      
+      if (daysUntilPayment > 0 && daysUntilPayment <= 5) {
+        return "badge-urgent-payment";
+      }
+    }
+    
+    return "badge-warning";
   };
 
   const handleMarkAsPaid = async () => {
@@ -233,8 +273,8 @@ const PropertyViewModal = ({ open, onClose, property }: PropertyViewModalProps) 
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">Estado:</span>
-                    <span className={getStatusBadge(property.payment_status)}>
-                      {property.payment_status || "Pendiente"}
+                    <span className={getPaymentStatusBadgeClass(property.payment_status)}>
+                      {getPaymentStatusLabel(property.payment_status)}
                     </span>
                   </div>
                   {property.next_payment_date && (

@@ -147,6 +147,12 @@
     @apply bg-warning text-warning-foreground px-3 py-1 rounded-full text-xs font-medium;
   }
 
+  .badge-urgent-payment {
+    @apply bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-xs font-bold;
+    animation: flash 1.5s ease-in-out infinite;
+    box-shadow: 0 0 8px rgba(220, 38, 38, 0.5);
+  }
+
   .badge-destructive {
     @apply bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-xs font-medium;
   }
@@ -156,6 +162,21 @@
     animation: float-pulse 1.5s ease-in-out infinite;
     box-shadow: 0 0 8px rgba(220, 38, 38, 0.5);
     position: relative;
+  }
+
+  .badge-contract-expiring {
+    @apply bg-gradient-to-r from-amber-500 to-orange-600 text-white px-2.5 py-0.5 rounded-full text-xs font-bold whitespace-nowrap;
+    animation: float-pulse 1.5s ease-in-out infinite;
+    box-shadow: 0 0 8px rgba(217, 119, 6, 0.5);
+    position: relative;
+  }
+
+  .badge-contract-expiring::before {
+    content: '';
+    @apply absolute inset-0 rounded-full bg-gradient-to-r from-amber-500 to-orange-600;
+    opacity: 0;
+    animation: glow-pulse 1.5s ease-in-out infinite;
+    z-index: -1;
   }
 
   .badge-urgent-floating::before {
