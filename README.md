@@ -1,22 +1,18 @@
-# Welcome to your Lovable project
+# Hogar Gestionado
+
+A modern property management application built with React, TypeScript, and Supabase.
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+This is a full-stack property management system designed to help users manage their properties efficiently.
 
 ## How can I edit this code?
 
 There are several ways of editing your application.
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
 **Use your preferred IDE**
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+You can clone this repo and work locally using your preferred IDE. Push changes directly to update the application.
 
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
@@ -62,12 +58,18 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+This project can be deployed to various platforms:
 
-## Can I connect a custom domain to my Lovable project?
+- **Vercel**: Connect your GitHub repo to Vercel for automatic deployments
+- **Netlify**: Deploy directly from your GitHub repository
+- **Traditional hosting**: Build with `npm run build` and host the `dist` folder
 
-Yes, you can!
+## Environment Setup
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Create a `.env` file with your Supabase credentials:
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```env
+VITE_SUPABASE_URL=your_project_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
+VITE_SUPABASE_PROJECT_ID=your_project_id
+```

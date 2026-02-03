@@ -39,6 +39,18 @@ const getPaymentStatusBadge = (status: string | null, nextPaymentDate: string | 
   return { label: status || "Pendiente", className: "badge-warning" };
 };
 
+const isPaymentUrgent = (nextPaymentDate: string | null) => {
+  if (!nextPaymentDate) return false;
+  
+  const today = new Date();
+  const paymentDate = parseISO(nextPaymentDate);
+  const daysUntilPayment = Math.ceil(
+    (paymentDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  
+  return daysUntilPayment > 0 && daysUntilPayment <= 5;
+};
+
 const PropertyCard = ({ property, onView, onEdit }: PropertyCardProps) => {
   const isOccupied = property.status === "Ocupado";
   const paymentBadge = isOccupied
@@ -135,9 +147,16 @@ const PropertyCard = ({ property, onView, onEdit }: PropertyCardProps) => {
             )}
 
             {paymentBadge && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <CreditCard className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
-                <span className={paymentBadge.className}>{paymentBadge.label}</span>
+                <div className="flex items-center gap-2">
+                  <span className={paymentBadge.className}>{paymentBadge.label}</span>
+                  {isPaymentUrgent(property.next_payment_date) && (
+                    <div className="badge-urgent-floating">
+                      ⏰ Vence pronto
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </>

@@ -151,6 +151,50 @@
     @apply bg-destructive text-destructive-foreground px-3 py-1 rounded-full text-xs font-medium;
   }
 
+  .badge-urgent-floating {
+    @apply bg-gradient-to-r from-destructive to-red-600 text-destructive-foreground px-2.5 py-0.5 rounded-full text-xs font-bold;
+    animation: float-pulse 1.5s ease-in-out infinite;
+    box-shadow: 0 0 8px rgba(220, 38, 38, 0.5);
+    position: relative;
+  }
+
+  .badge-urgent-floating::before {
+    content: '';
+    @apply absolute inset-0 rounded-full bg-gradient-to-r from-destructive to-red-600;
+    opacity: 0;
+    animation: glow-pulse 1.5s ease-in-out infinite;
+    z-index: -1;
+  }
+
+  @keyframes float-pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: translateY(0px);
+    }
+    50% {
+      opacity: 0.7;
+      transform: translateY(-2px);
+    }
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 6px rgba(220, 38, 38, 0);
+    }
+  }
+
+  @keyframes flash {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+
   /* Stat card gradient backgrounds */
   .stat-card {
     @apply relative overflow-hidden rounded-xl p-6;
